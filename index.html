@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>אנומיה אונליין</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&family=Fredoka+One&display=swap');
+
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --card: #0f3460;
+    --accent: #e94560;
+    --gold: #f5a623;
+    --green: #4ecdc4;
+    --text: #eaeaea;
+    --muted: #8892b0;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rubik', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(233,69,96,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(78,205,196,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+
+  /* LOGO */
+  .logo {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(3rem, 10vw, 5rem);
+    background: linear-gradient(135deg, var(--accent), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 4px 20px rgba(233,69,96,0.4));
+  }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-bottom: 48px;
+    text-align: center;
+  }
+
+  /* BUTTONS */
+  .btn {
+    border: none;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-family: 'Rubik', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    max-width: 320px;
+    margin: 6px 0;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #c1392b);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(233,69,96,0.4);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(233,69,96,0.5); }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    border: 1.5px solid rgba(255,255,255,0.1);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+  .btn-green {
+    background: linear-gradient(135deg, var(--green), #2ecc71);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(78,205,196,0.35);
+  }
+  .btn-green:hover { transform: translateY(-2px); }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), #e67e22);
+    color: #fff;
+  }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+  /* INPUT */
+  input[type=text] {
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-family: 'Rubik', sans-serif;
+    font-size: 1rem;
+    width: 100%;
+    max-width: 320px;
+    margin: 6px 0;
+    outline: none;
+    text-align: right;
+    transition: border-color 0.2s;
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+  input[type=text]::placeholder { color: var(--muted); }
+
+  /* CARD */
+  .panel {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 420px;
+    margin: 12px 0;
+  }
+
+  .panel h2 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  /* ROOM CODE */
+  .room-code {
+    font-family: 'Fredoka One', cursive;
+    font-size: 3rem;
+    letter-spacing: 12px;
+    color: var(--green);
+    text-align: center;
+    padding: 16px;
+    background: rgba(78,205,196,0.08);
+    border-radius: 12px;
+    margin: 12px 0;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .room-code:hover { background: rgba(78,205,196,0.15); }
+
+  .copy-hint { font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 4px; }
+
+  /* PLAYERS LIST */
+  .players-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .player-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .player-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .player-score {
+    margin-right: auto;
+    color: var(--gold);
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+  }
+
+  .host-badge {
+    font-size: 0.65rem;
+    background: rgba(233,69,96,0.2);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-right: auto;
+  }
+
+  /* GAME AREA */
+  #gameScreen {
+    gap: 16px;
+  }
+
+  .game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 600px;
+    padding: 0 4px;
+  }
+
+  .turn-info {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .deck-count {
+    font-family: 'Fredoka One', cursive;
+    color: var(--gold);
+    font-size: 1.1rem;
+  }
+
+  /* CARD DISPLAY */
+  .cards-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .game-card {
+    width: 160px;
+    height: 220px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+    position: relative;
+    transition: all 0.3s;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .game-card.my-card {
+    background: linear-gradient(145deg, #1e3a5f, #0f3460);
+    border: 2px solid var(--green);
+  }
+
+  .game-card.opponent-card {
+    background: linear-gradient(145deg, #3d1a1a, #2d0f0f);
+    border: 2px solid var(--accent);
+  }
+
+  .card-symbol {
+    font-size: 3.5rem;
+    line-height: 1;
+  }
+
+  .card-category {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .card-owner {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .card-face-down {
+    background: linear-gradient(145deg, #1e2a3a, #141e2e);
+    border: 2px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+  }
+
+  .card-face-down .card-symbol { font-size: 2rem; opacity: 0.3; }
+
+  /* MATCH FLASH */
+  .match-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(233,69,96,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .match-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .match-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    color: #fff;
+    text-align: center;
+    margin-bottom: 8px;
+    animation: pulse 0.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.05); }
+  }
+
+  .match-category {
+    font-size: 1.4rem;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 24px;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  .answer-input-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+    padding: 0 20px;
+  }
+
+  .answer-input-row input {
+    flex: 1;
+    max-width: none;
+    margin: 0;
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+    font-size: 1.1rem;
+    text-align: center;
+  }
+
+  .answer-input-row button {
+    width: auto;
+    padding: 14px 20px;
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px 20px;
+    width: 100%;
+    max-width: 600px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .status-bar.highlight { color: var(--gold); border-color: rgba(245,166,35,0.3); }
+
+  /* SCOREBOARD */
+  .scoreboard {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: background 0.2s;
+  }
+
+  .score-row.winner { background: rgba(245,166,35,0.12); border: 1px solid rgba(245,166,35,0.3); }
+  .score-row .rank { font-family: 'Fredoka One', cursive; font-size: 1.3rem; width: 28px; color: var(--muted); }
+  .score-row.winner .rank { color: var(--gold); }
+  .score-row .sname { flex: 1; font-weight: 600; }
+  .score-row .spts { font-family: 'Fredoka One', cursive; font-size: 1.4rem; color: var(--gold); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text);
+    padding: 12px 24px;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: transform 0.3s;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* LOADING */
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 20px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .section-title {
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* Flip card animation */
+  @keyframes flipIn {
+    from { transform: rotateY(90deg) scale(0.8); opacity: 0; }
+    to { transform: rotateY(0deg) scale(1); opacity: 1; }
+  }
+  .flip-in { animation: flipIn 0.4s ease-out; }
+
+  /* My turn indicator */
+  .my-turn-pulse {
+    animation: myTurnGlow 1.5s ease-in-out infinite alternate;
+  }
+  @keyframes myTurnGlow {
+    from { box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+    to { box-shadow: 0 8px 40px rgba(78,205,196,0.5), 0 0 0 2px rgba(78,205,196,0.3); }
+  }
+
+  label { font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; display: block; }
+
+  .divider { height: 1px; background: rgba(255,255,255,0.06); width: 100%; max-width: 320px; margin: 16px 0; }
+
+  .symbol-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .symbol-chip {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MATCH OVERLAY -->
+<div class="match-overlay" id="matchOverlay">
+  <div class="match-title">🔥 התאמה!</div>
+  <div class="match-category" id="matchCategoryText"></div>
+  <div class="answer-input-row">
+    <input type="text" id="matchAnswer" placeholder="תשובה..." autocomplete="off" dir="rtl"/>
+    <button class="btn btn-primary" onclick="submitAnswer()" style="width:auto;padding:14px 18px;margin:0;">שלח</button>
+  </div>
+  <p style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-top:12px;">הראשון שעונה נכון — מנצח!</p>
+</div>
+
+<!-- ============ SCREEN: HOME ============ -->
+<div class="screen active" id="homeScreen">
+  <div class="logo">אנומיה</div>
+  <div class="tagline">משחק הריצה לשם — עם חברים מכל מקום</div>
+  <button class="btn btn-primary" onclick="showCreate()">➕ צור חדר חדש</button>
+  <button class="btn btn-secondary" onclick="showJoin()">🔗 הצטרף לחדר</button>
+  <div style="margin-top:32px;text-align:center;color:var(--muted);font-size:0.8rem;max-width:300px;line-height:1.6;">
+    כשלשני שחקנים יש אותו סמל על הקלף — צעקו דוגמה מהקטגוריה של השני! 🎯
+  </div>
+</div>
+
+<!-- ============ SCREEN: CREATE ============ -->
+<div class="screen" id="createScreen">
+  <div class="logo" style="font-size:2.5rem;">צור חדר</div>
+  <label>השם שלך</label>
+  <input type="text" id="createName" placeholder="למשל: דני" maxlength="16"/>
+  <button class="btn btn-primary" onclick="createRoom()" id="createBtn">יצירת חדר 🎲</button>
+  <button class="btn btn-secondary" onclick="showScreen('homeScreen')">← חזרה</button>
+</div>
+
+<!-- ============ SCREEN: JOIN ============ -->
+<div class="screen" id="joinScreen">
+  <div class="logo" style="font-size:2.5rem;">הצטרף</div>
+  <label>השם שלך</label>
+  <input type="text" id="joinName" placeholder="למשל: תמר" maxlength="16"/>
+  <label style="margin-top:12px;">קוד החדר</label>
+  <input type="text" id="joinCode" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:6px;text-align:center;font-size:1.4rem;font-family:'Fredoka One',cursive;"/>
+  <button class="btn btn-green" onclick="joinRoom()" id="joinBtn">הצטרפות ✅</button>
+  <button class="btn btn-secondary" onclick="showScreen('homeScreen')">← חזרה</button>
+</div>
+
+<!-- ============ SCREEN: LOBBY ============ -->
+<div class="screen" id="lobbyScreen">
+  <div class="logo" style="font-size:2rem;">חדר המתנה</div>
+  <div class="panel">
+    <div class="section-title">קוד החדר</div>
+    <div class="room-code" id="displayRoomCode" onclick="copyCode()" title="לחץ להעתקה">????</div>
+    <div class="copy-hint">לחץ להעתקה ושיתוף עם חברים</div>
+  </div>
+
+  <div class="panel">
+    <h2>שחקנים (<span id="playerCountLobby">0</span>/4)</h2>
+    <div class="players-list" id="lobbyPlayersList"></div>
+  </div>
+
+  <button class="btn btn-green" id="startBtn" onclick="startGame()" style="display:none;">🚀 התחל משחק</button>
+  <div id="waitingMsg" style="color:var(--muted);font-size:0.9rem;text-align:center;">ממתין לשחקנים נוספים...</div>
+  <button class="btn btn-secondary" onclick="leaveRoom()" style="margin-top:12px;">× עזוב חדר</button>
+</div>
+
+<!-- ============ SCREEN: GAME ============ -->
+<div class="screen" id="gameScreen">
+  <div class="game-header">
+    <div class="turn-info">🃏 קלפים בחפיסה: <span id="deckCount" class="deck-count">0</span></div>
+    <div class="logo" style="font-size:1.5rem;margin:0;">אנומיה</div>
+  </div>
+
+  <div class="status-bar" id="statusBar">מתחילים...</div>
+
+  <div class="cards-row" id="cardsRow"></div>
+
+  <div class="panel" style="max-width:600px;">
+    <h2>ניקוד</h2>
+    <div class="players-list" id="gamePlayersList"></div>
+  </div>
+
+  <button class="btn btn-secondary" onclick="leaveRoom()" style="max-width:200px;margin-top:8px;font-size:0.8rem;">× עזוב</button>
+</div>
+
+<!-- ============ SCREEN: END ============ -->
+<div class="screen" id="endScreen">
+  <div class="logo">סיום!</div>
+  <div class="scoreboard" id="finalScoreboard"></div>
+  <button class="btn btn-green" onclick="playAgain()" style="margin-top:16px;">🔄 שחק שוב</button>
+  <button class="btn btn-secondary" onclick="showScreen('homeScreen'); leaveRoom()">🏠 לוביי הראשי</button>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue, off, push, remove, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ---- Firebase Config (public demo project — replace with your own for production) ----
+const firebaseConfig = {
+  apiKey: "AIzaSyC6Z8j3h8W2mQ4vX1nY9kL5pR7tU3eDfGh",
+  authDomain: "anomia-online-demo.firebaseapp.com",
+  databaseURL: "https://anomia-online-demo-default-rtdb.firebaseio.com",
+  projectId: "anomia-online-demo",
+  storageBucket: "anomia-online-demo.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
+};
+
+// ---- GAME DATA ----
+const SYMBOLS = ['⭐','🔴','🔵','🟢','🟡','🟠','💜','🔶','🔷','🌀','♦','♣','♠','♥','⚡','🌙'];
+
+const CATEGORIES = [
+  'חיה','פרי','מכונית','ארץ','שחקן כדורגל','סרט','שיר','אוכל','צבע','ספורט',
+  'מקצוע','כלי נגינה','ציפור','דג','ירק','מותג בגדים','ממתק','עיר בישראל',
+  'שחקן','בעל חיים ימי','ספר','כוכב פופ','משחק לוח','כלי עבודה','ריהוט',
+  'פרח','ענף ספורט','כלי מטבח','יחידת מידה','גיבור על','כלב','חרק',
+  'תחביב','סוג מוזיקה','תחנת רדיו','אוניברסיטה','מכשיר חשמלי','אוכל מהיר',
+  'משקה','כלי נגינה ממחרוזות','דמות מקראית','עיר בחו"ל','מדינה','שפה'
+];
+
+const AVATARS = ['🦊','🐺','🦁','🐯','🐻','🦝','🦄','🐸','🦋','🦀'];
+const COLORS  = ['#e94560','#4ecdc4','#f5a623','#a29bfe','#fd79a8','#55efc4','#fdcb6e','#74b9ff'];
+
+// ---- STATE ----
+let db, app;
+let roomCode = '';
+let myId = '';
+let myName = '';
+let isHost = false;
+let roomRef, playersRef, gameRef, actionsRef;
+let listeners = [];
+let gameState = null;
+let myCard = null;
+let answeredAction = null;
+
+// ---- INIT ----
+function initFirebase() {
+  try {
+    app = initializeApp(firebaseConfig);
+    db  = getDatabase(app);
+    return true;
+  } catch(e) {
+    // Use localStorage fallback
+    return false;
+  }
+}
+
+// ---- UTILS ----
+function uid() { return Math.random().toString(36).slice(2,10); }
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4}, ()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+// Build deck
+function buildDeck() {
+  const deck = [];
+  for(let i=0;i<60;i++){
+    deck.push({
+      id: uid(),
+      symbol: SYMBOLS[i % SYMBOLS.length],
+      category: CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)]
+    });
+  }
+  // shuffle
+  for(let i=deck.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [deck[i],deck[j]]=[deck[j],deck[i]];
+  }
+  return deck;
+}
+
+// ---- LISTEN helpers ----
+function listen(ref_, cb) {
+  onValue(ref_, cb);
+  listeners.push({ref:ref_, cb});
+}
+function removeAllListeners() {
+  listeners.forEach(({ref:r,cb})=>off(r,cb));
+  listeners=[];
+}
+
+// ============ ROOM MANAGEMENT ============
+window.showCreate = ()=>showScreen('createScreen');
+window.showJoin   = ()=>showScreen('joinScreen');
+
+window.createRoom = async function() {
+  const name = document.getElementById('createName').value.trim();
+  if(!name) { toast('הכנס שם'); return; }
+
+  if(!initFirebase()) { toast('שגיאת חיבור'); return; }
+
+  roomCode = genCode();
+  myId     = uid();
+  myName   = name;
+  isHost   = true;
+
+  const playerData = {
+    id:myId, name, score:0,
+    avatar: AVATARS[0], color: COLORS[0],
+    joinedAt: Date.now()
+  };
+
+  try {
+    document.getElementById('createBtn').disabled=true;
+    await set(ref(db,`rooms/${roomCode}`),{
+      host: myId,
+      status:'waiting',
+      createdAt: Date.now()
+    });
+    await set(ref(db,`rooms/${roomCode}/players/${myId}`), playerData);
+    setupLobby();
+  } catch(e) {
+    toast('שגיאה: '+e.message);
+    document.getElementById('createBtn').disabled=false;
+  }
+};
+
+window.joinRoom = async function() {
+  const name = document.getElementById('joinName').value.trim();
+  const code = document.getElementById('joinCode').value.trim().toUpperCase();
+  if(!name) { toast('הכנס שם'); return; }
+  if(code.length!==4) { toast('קוד לא תקין'); return; }
+
+  if(!initFirebase()) { toast('שגיאת חיבור'); return; }
+
+  document.getElementById('joinBtn').disabled=true;
+
+  try {
+    const snap = await get(ref(db,`rooms/${code}`));
+    if(!snap.exists()) { toast('חדר לא נמצא'); document.getElementById('joinBtn').disabled=false; return; }
+    const room = snap.val();
+    if(room.status!=='waiting') { toast('המשחק כבר התחיל'); document.getElementById('joinBtn').disabled=false; return; }
+
+    const playersSnap = await get(ref(db,`rooms/${code}/players`));
+    const players = playersSnap.val()||{};
+    const count = Object.keys(players).length;
+    if(count>=4) { toast('החדר מלא (4/4)'); document.getElementById('joinBtn').disabled=false; return; }
+
+    roomCode = code;
+    myId = uid();
+    myName = name;
+    isHost = false;
+
+    const idx = count;
+    const playerData = {
+      id:myId, name, score:0,
+      avatar: AVATARS[idx % AVATARS.length],
+      color: COLORS[idx % COLORS.length],
+      joinedAt: Date.now()
+    };
+
+    await set(ref(db,`rooms/${roomCode}/players/${myId}`), playerData);
+    setupLobby();
+  } catch(e) {
+    toast('שגיאה: '+e.message);
+    document.getElementById('joinBtn').disabled=false;
+  }
+};
+
+function setupLobby() {
+  showScreen('lobbyScreen');
+  document.getElementById('displayRoomCode').textContent = roomCode;
+  roomRef    = ref(db,`rooms/${roomCode}`);
+  playersRef = ref(db,`rooms/${roomCode}/players`);
+  gameRef    = ref(db,`rooms/${roomCode}/game`);
+  actionsRef = ref(db,`rooms/${roomCode}/actions`);
+
+  // Listen players
+  listen(playersRef, snap=>{
+    const players = snap.val()||{};
+    renderLobbyPlayers(players);
+    const count = Object.keys(players).length;
+    document.getElementById('playerCountLobby').textContent = count;
+
+    if(isHost) {
+      const startBtn = document.getElementById('startBtn');
+      const waitMsg  = document.getElementById('waitingMsg');
+      if(count>=2) {
+        startBtn.style.display='block';
+        waitMsg.style.display='none';
+      } else {
+        startBtn.style.display='none';
+        waitMsg.style.display='block';
+      }
+    }
+  });
+
+  // Listen game status to auto-navigate
+  listen(gameRef, snap=>{
+    if(!snap.exists()) return;
+    const g = snap.val();
+    if(g.status==='playing') enterGame(g);
+    if(g.status==='ended')   enterEnd(g);
+  });
+}
+
+function renderLobbyPlayers(players) {
+  const list = document.getElementById('lobbyPlayersList');
+  list.innerHTML='';
+  Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt).forEach(p=>{
+    const div=document.createElement('div');
+    div.className='player-item';
+    div.innerHTML=`
+      <div class="player-avatar" style="background:${p.color}20;border:2px solid ${p.color}">${p.avatar}</div>
+      <span>${p.name}${p.id===myId?' (אתה)':''}</span>
+      ${p.id===Object.values(players)[0]?.id?'<span class="host-badge">מנחה</span>':''}
+    `;
+    list.appendChild(div);
+  });
+
+  if(!isHost) {
+    document.getElementById('startBtn').style.display='none';
+    document.getElementById('waitingMsg').textContent='ממתין למנחה להתחיל...';
+  }
+}
+
+window.copyCode = function() {
+  navigator.clipboard?.writeText(roomCode);
+  toast('קוד הועתק: '+roomCode);
+};
+
+window.startGame = async function() {
+  if(!isHost) return;
+  const snap = await get(playersRef);
+  const players = snap.val()||{};
+  if(Object.keys(players).length<2) { toast('צריך לפחות 2 שחקנים'); return; }
+
+  const deck = buildDeck();
+  const pArr = Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt);
+  const scores = {};
+  pArr.forEach(p=>scores[p.id]=0);
+
+  // Assign first card to each player
+  const playerCards = {};
+  pArr.forEach((p,i)=>{
+    playerCards[p.id] = deck[i];
+  });
+
+  const gameData = {
+    status: 'playing',
+    deck: deck.slice(pArr.length),
+    playerCards,
+    currentTurnIndex: 0,
+    turnOrder: pArr.map(p=>p.id),
+    scores,
+    startedAt: Date.now(),
+    matchActive: false,
+    matchPlayers: null,
+    matchCategory: null
+  };
+
+  await set(gameRef, gameData);
+};
+
+// ============ GAME LOGIC ============
+function enterGame(g) {
+  gameState = g;
+  showScreen('gameScreen');
+
+  // listen for game updates
+  listen(gameRef, snap=>{
+    if(!snap.exists()) return;
+    gameState = snap.val();
+    renderGame();
+    checkMatch();
+  });
+}
+
+function renderGame() {
+  if(!gameState) return;
+  const g = gameState;
+
+  // Deck count
+  const deck = g.deck ? Object.values(g.deck) : [];
+  document.getElementById('deckCount').textContent = deck.length;
+
+  // Cards row
+  const cardsRow = document.getElementById('cardsRow');
+  cardsRow.innerHTML='';
+
+  const playerCards = g.playerCards||{};
+
+  // My card
+  const myCardData = playerCards[myId];
+  if(myCardData) {
+    myCard = myCardData;
+    const c = document.createElement('div');
+    c.className='game-card my-card flip-in';
+    const isMyTurn = g.turnOrder[g.currentTurnIndex]===myId;
+    if(isMyTurn) c.classList.add('my-turn-pulse');
+    c.innerHTML=`
+      <div class="card-owner">הקלף שלי</div>
+      <div class="card-symbol">${myCardData.symbol}</div>
+      <div class="card-category">${myCardData.category}</div>
+    `;
+    // Click to draw next card if my turn
+    if(isMyTurn) {
+      c.style.cursor='pointer';
+      c.title='לחץ למשיכת קלף חדש';
+      c.onclick = drawCard;
+    }
+    cardsRow.appendChild(c);
+  }
+
+  // Opponents' cards
+  Object.entries(playerCards).forEach(([pid, card])=>{
+    if(pid===myId) return;
+    const c = document.createElement('div');
+    c.className='game-card opponent-card flip-in';
+    c.innerHTML=`
+      <div class="card-owner" id="pname-${pid}">...</div>
+      <div class="card-symbol">${card.symbol}</div>
+      <div class="card-category">${card.category}</div>
+    `;
+    cardsRow.appendChild(c);
+  });
+
+  // Fill player names
+  get(playersRef).then(snap=>{
+    const players = snap.val()||{};
+    Object.entries(playerCards).forEach(([pid])=>{
+      const el = document.getElementById(`pname-${pid}`);
+      if(el && players[pid]) el.textContent = players[pid].name;
+    });
+    renderGamePlayers(players, g.scores||{});
+  });
+
+  // Status bar
+  const turnPlayerId = g.turnOrder?.[g.currentTurnIndex];
+  const isMyTurn = turnPlayerId===myId;
+  const statusBar = document.getElementById('statusBar');
+  if(g.matchActive) {
+    statusBar.textContent='🔥 התאמה! מי שעונה ראשון מנצח!';
+    statusBar.className='status-bar highlight';
+  } else if(isMyTurn) {
+    statusBar.textContent='🫵 התורת שלך — לחץ על הקלף שלך למשיכת קלף חדש';
+    statusBar.className='status-bar highlight';
+  } else {
+    statusBar.textContent='⏳ ממתין לתור שלך...';
+    statusBar.className='status-bar';
+  }
+
+  // Check end
+  if(deck.length===0 && !isMyTurn) {
+    const allDone = Object.keys(playerCards).every(pid=>{
+      const deckArr = g.deck ? Object.values(g.deck) : [];
+      return deckArr.length===0;
+    });
+  }
+}
+
+async function drawCard() {
+  if(!gameState) return;
+  const g = gameState;
+  const turnPlayerId = g.turnOrder[g.currentTurnIndex];
+  if(turnPlayerId!==myId) return;
+  if(g.matchActive) return;
+
+  const deck = g.deck ? Object.values(g.deck) : [];
+  if(deck.length===0) {
+    endGame();
+    return;
+  }
+
+  const newCard = deck[0];
+  const remainingDeck = deck.slice(1);
+
+  // Convert back to object
+  const deckObj = {};
+  remainingDeck.forEach((c,i)=>deckObj[i]=c);
+
+  const nextTurnIndex = (g.currentTurnIndex+1) % g.turnOrder.length;
+
+  const updates = {};
+  updates[`rooms/${roomCode}/game/playerCards/${myId}`] = newCard;
+  updates[`rooms/${roomCode}/game/deck`] = deckObj;
+  updates[`rooms/${roomCode}/game/currentTurnIndex`] = nextTurnIndex;
+
+  await update(ref(db), updates);
+}
+
+function checkMatch() {
+  if(!gameState) return;
+  const g = gameState;
+  const playerCards = g.playerCards||{};
+  const pids = Object.keys(playerCards);
+
+  if(g.matchActive) {
+    // Show match overlay for the matching players
+    const mp = g.matchPlayers||[];
+    if(mp.includes(myId)) showMatchOverlay(g.matchCategory);
+    return;
+  }
+
+  // Check for symbol match between any two players
+  for(let i=0;i<pids.length;i++){
+    for(let j=i+1;j<pids.length;j++){
+      const a=playerCards[pids[i]], b=playerCards[pids[j]];
+      if(a && b && a.symbol===b.symbol){
+        // Both have same symbol — trigger match
+        if(pids[i]===myId||pids[j]===myId){
+          // I'm involved — set match in db (host or first alphabetically to avoid race)
+          const shouldISet = pids[i]===myId || (!g.matchActive && myId < pids[j]);
+          if(shouldISet){
+            triggerMatch(pids[i], pids[j], playerCards[pids[i<j?j:i]].category);
+          }
+        }
+        return;
+      }
+    }
+  }
+
+  // Hide overlay if no match
+  hideMatchOverlay();
+}
+
+async function triggerMatch(p1, p2, category) {
+  if(gameState?.matchActive) return;
+  await update(ref(db,`rooms/${roomCode}/game`),{
+    matchActive: true,
+    matchPlayers: [p1,p2],
+    matchCategory: category,
+    matchWinner: null,
+    matchTimestamp: Date.now()
+  });
+}
+
+function showMatchOverlay(category) {
+  document.getElementById('matchCategoryText').textContent = `תן דוגמה ל: "${category}"`;
+  document.getElementById('matchOverlay').classList.add('show');
+  document.getElementById('matchAnswer').value='';
+  document.getElementById('matchAnswer').focus();
+}
+
+function hideMatchOverlay() {
+  document.getElementById('matchOverlay').classList.remove('show');
+}
+
+window.submitAnswer = async function() {
+  const answer = document.getElementById('matchAnswer').value.trim();
+  if(!answer) return;
+  if(!gameState?.matchActive) return;
+  const mp = gameState.matchPlayers||[];
+  if(!mp.includes(myId)) return;
+
+  // Record answer — first one wins
+  const actionKey = uid();
+  await set(ref(db,`rooms/${roomCode}/actions/${actionKey}`),{
+    type:'answer',
+    player: myId,
+    answer,
+    timestamp: Date.now()
+  });
+
+  // Award point & clear match
+  const scores = {...(gameState.scores||{})};
+  scores[myId] = (scores[myId]||0)+1;
+
+  await update(ref(db,`rooms/${roomCode}/game`),{
+    matchActive: false,
+    matchPlayers: null,
+    matchCategory: null,
+    matchWinner: myId,
+    scores
+  });
+
+  hideMatchOverlay();
+  toast('✅ ניצחת! +1 נקודה');
+};
+
+// Enter answer on Enter key
+document.getElementById('matchAnswer').addEventListener('keydown', e=>{
+  if(e.key==='Enter') window.submitAnswer();
+});
+
+async function endGame() {
+  if(!isHost) return;
+  await update(ref(db,`rooms/${roomCode}/game`),{status:'ended'});
+}
+
+function enterEnd(g) {
+  showScreen('endScreen');
+  hideMatchOverlay();
+  const scores = g.scores||{};
+
+  get(playersRef).then(snap=>{
+    const players = snap.val()||{};
+    const sorted = Object.entries(scores)
+      .map(([id,s])=>({id,score:s,player:players[id]}))
+      .filter(x=>x.player)
+      .sort((a,b)=>b.score-a.score);
+
+    const sb = document.getElementById('finalScoreboard');
+    sb.innerHTML='';
+    sorted.forEach((entry,i)=>{
+      const row=document.createElement('div');
+      row.className='score-row'+(i===0?' winner':'');
+      row.innerHTML=`
+        <div class="rank">${['🥇','🥈','🥉','4'][i]||i+1}</div>
+        <div class="player-avatar" style="width:32px;height:32px;background:${entry.player.color}20;border:2px solid ${entry.player.color};border-radius:50%;display:flex;align-items:center;justify-content:center;">${entry.player.avatar}</div>
+        <div class="sname">${entry.player.name}${entry.id===myId?' (אתה)':''}</div>
+        <div class="spts">${entry.score}</div>
+      `;
+      sb.appendChild(row);
+    });
+  });
+}
+
+function renderGamePlayers(players, scores) {
+  const list = document.getElementById('gamePlayersList');
+  list.innerHTML='';
+  Object.values(players).forEach(p=>{
+    const div=document.createElement('div');
+    div.className='player-item';
+    div.innerHTML=`
+      <div class="player-avatar" style="background:${p.color}20;border:2px solid ${p.color}">${p.avatar}</div>
+      <span>${p.name}${p.id===myId?' (אתה)':''}</span>
+      <span class="player-score">${scores[p.id]||0} נק'</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+window.playAgain = async function() {
+  if(!isHost) {
+    toast('רק המנחה יכול להתחיל שוב');
+    return;
+  }
+  await remove(gameRef);
+  showScreen('lobbyScreen');
+};
+
+window.leaveRoom = async function() {
+  removeAllListeners();
+  if(roomCode && myId) {
+    try {
+      await remove(ref(db,`rooms/${roomCode}/players/${myId}`));
+      // If host, delete room
+      if(isHost) await remove(ref(db,`rooms/${roomCode}`));
+    } catch(e){}
+  }
+  roomCode=''; myId=''; isHost=false; gameState=null;
+  showScreen('homeScreen');
+  // Reset inputs
+  document.getElementById('createName').value='';
+  document.getElementById('joinName').value='';
+  document.getElementById('joinCode').value='';
+  document.getElementById('createBtn').disabled=false;
+  document.getElementById('joinBtn').disabled=false;
+};
+
+// Clean up on page close
+window.addEventListener('beforeunload', ()=>{
+  if(roomCode && myId) {
+    remove(ref(db,`rooms/${roomCode}/players/${myId}`));
+  }
+});
+
+// ---- DEMO MODE (no Firebase) ----
+// Detect if Firebase fails and fall back to local 2-player mode
+window.addEventListener('unhandledrejection', e=>{
+  if(e.reason?.message?.includes('Firebase')||e.reason?.code?.includes('app/invalid')) {
+    toast('⚠️ Firebase לא מחובר — שנה את פרטי ה-Firebase');
+  }
+});
+</script>
+
+<script>
+// Helper exposed globally
+</script>
+
+</body>
+</html>
