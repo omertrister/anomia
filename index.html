@@ -963,6 +963,9 @@ async function drawCard() {
   await update(ref(db), updates);
 }
 
+let overlayShowing = false;
+let lastMatchTimestamp = null;
+
 function checkMatch() {
   if(!gameState) return;
   const g = gameState;
@@ -970,29 +973,35 @@ function checkMatch() {
   const pids = Object.keys(playerCards);
 
   if(g.matchActive) {
-    // Show match overlay for the matching players
     const mp = g.matchPlayers||[];
-    if(mp.includes(myId)) showMatchOverlay(g.matchCategory);
+    if(mp.includes(myId)) {
+      // Only open overlay once per match (don't reset if already open)
+      if(!overlayShowing || lastMatchTimestamp !== g.matchTimestamp) {
+        lastMatchTimestamp = g.matchTimestamp;
+        overlayShowing = true;
+        showMatchOverlay(g.matchCategory);
+      }
+    }
     return;
   }
 
-  // Match just ended — if overlay is open, close it and notify loser
-  if(document.getElementById('matchOverlay').classList.contains('show')) {
+  // matchActive is false — if overlay was open, someone won
+  if(overlayShowing) {
+    overlayShowing = false;
     hideMatchOverlay();
     if(g.matchWinner && g.matchWinner !== myId) {
       toast('😅 הפסדת! השני היה מהיר יותר');
     }
+    return; // don't immediately re-trigger a new match this tick
   }
 
-  // Check for symbol match between any two players
+  // Check for NEW symbol match between any two players
   for(let i=0;i<pids.length;i++){
     for(let j=i+1;j<pids.length;j++){
       const a=playerCards[pids[i]], b=playerCards[pids[j]];
       if(a && b && a.symbol===b.symbol){
-        // Both have same symbol — trigger match
         if(pids[i]===myId||pids[j]===myId){
-          // I'm involved — set match in db (host or first alphabetically to avoid race)
-          const shouldISet = pids[i]===myId || (!g.matchActive && myId < pids[j]);
+          const shouldISet = pids[i]===myId || myId < pids[j];
           if(shouldISet){
             triggerMatch(pids[i], pids[j], playerCards[pids[i<j?j:i]].category);
           }
@@ -1001,9 +1010,6 @@ function checkMatch() {
       }
     }
   }
-
-  // Hide overlay if no match
-  hideMatchOverlay();
 }
 
 async function triggerMatch(p1, p2, category) {
@@ -1061,8 +1067,10 @@ window.submitAnswer = async function() {
     scores
   });
 
-  hideMatchOverlay();
+  // Don't hide overlay here — the Firebase listener will fire and checkMatch will handle it
+  // Just show winner toast; overlay closes via the listener for both players
   toast('✅ ניצחת! +1 נקודה 🎉');
+  setTimeout(()=>{ overlayShowing = false; hideMatchOverlay(); }, 100);
 };
 
 // Enter answer on Enter key
