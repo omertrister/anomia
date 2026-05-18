@@ -976,6 +976,14 @@ function checkMatch() {
     return;
   }
 
+  // Match just ended — if overlay is open, close it and notify loser
+  if(document.getElementById('matchOverlay').classList.contains('show')) {
+    hideMatchOverlay();
+    if(g.matchWinner && g.matchWinner !== myId) {
+      toast('😅 הפסדת! השני היה מהיר יותר');
+    }
+  }
+
   // Check for symbol match between any two players
   for(let i=0;i<pids.length;i++){
     for(let j=i+1;j<pids.length;j++){
@@ -1000,8 +1008,10 @@ function checkMatch() {
 
 async function triggerMatch(p1, p2, category) {
   if(gameState?.matchActive) return;
+  if(gameState?.matchLocked) return;
   await update(ref(db,`rooms/${roomCode}/game`),{
     matchActive: true,
+    matchLocked: false,
     matchPlayers: [p1,p2],
     matchCategory: category,
     matchWinner: null,
@@ -1012,8 +1022,12 @@ async function triggerMatch(p1, p2, category) {
 function showMatchOverlay(category) {
   document.getElementById('matchCategoryText').textContent = `תן דוגמה ל: "${category}"`;
   document.getElementById('matchOverlay').classList.add('show');
-  document.getElementById('matchAnswer').value='';
-  document.getElementById('matchAnswer').focus();
+  const inp = document.getElementById('matchAnswer');
+  const btn = document.querySelector('.answer-input-row button');
+  inp.disabled = false;
+  btn.disabled = false;
+  inp.value='';
+  inp.focus();
 }
 
 function hideMatchOverlay() {
@@ -1024,24 +1038,23 @@ window.submitAnswer = async function() {
   const answer = document.getElementById('matchAnswer').value.trim();
   if(!answer) return;
   if(!gameState?.matchActive) return;
+  if(gameState?.matchLocked) return;
   const mp = gameState.matchPlayers||[];
   if(!mp.includes(myId)) return;
 
-  // Record answer — first one wins
-  const actionKey = uid();
-  await set(ref(db,`rooms/${roomCode}/actions/${actionKey}`),{
-    type:'answer',
-    player: myId,
-    answer,
-    timestamp: Date.now()
-  });
+  // Immediately disable to prevent double-click
+  const answerInput = document.getElementById('matchAnswer');
+  const answerBtn = document.querySelector('.answer-input-row button');
+  answerInput.disabled = true;
+  answerBtn.disabled = true;
 
-  // Award point & clear match
+  // First to write wins — matchActive:false acts as the lock
   const scores = {...(gameState.scores||{})};
   scores[myId] = (scores[myId]||0)+1;
 
   await update(ref(db,`rooms/${roomCode}/game`),{
     matchActive: false,
+    matchLocked: true,
     matchPlayers: null,
     matchCategory: null,
     matchWinner: myId,
@@ -1049,7 +1062,7 @@ window.submitAnswer = async function() {
   });
 
   hideMatchOverlay();
-  toast('✅ ניצחת! +1 נקודה');
+  toast('✅ ניצחת! +1 נקודה 🎉');
 };
 
 // Enter answer on Enter key
